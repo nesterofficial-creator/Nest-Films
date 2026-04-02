@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <link rel="icon" href="gold.png" type="image/png" sizes="32x32">
   <title>Nest Films - Stream & Download Movies</title>
   <!-- Google Fonts & Font Awesome -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,600;14..32,700&display=swap" rel="stylesheet">
@@ -123,6 +124,31 @@
     .btn-logout:hover {
       background: #3e424c;
     }
+    .nav-menu {
+      display: flex;
+      gap: 1.5rem;
+      align-items: center;
+    }
+    .nav-link {
+      color: #9ca3af;
+      text-decoration: none;
+      padding: 0.5rem 1rem;
+      border-radius: 25px;
+      font-weight: 500;
+      font-size: 0.95rem;
+      transition: all 0.25s ease;
+      white-space: nowrap;
+    }
+    .nav-link:hover {
+      color: white;
+      background: rgba(229, 9, 20, 0.2);
+      box-shadow: 0 2px 8px rgba(229, 9, 20, 0.3);
+    }
+    .nav-link.active {
+      color: #e50914;
+      background: rgba(229, 9, 20, 0.15);
+      font-weight: 600;
+    }
     .user-greeting {
       font-size: 0.85rem;
       background: #1e1f2a;
@@ -131,6 +157,11 @@
       display: flex;
       align-items: center;
       gap: 8px;
+    }
+    @media (max-width: 900px) {
+      .navbar { flex-direction: column; gap: 1rem; }
+      .nav-menu { gap: 1rem; flex-wrap: wrap; justify-content: center; }
+      .nav-link { padding: 0.4rem 0.8rem; font-size: 0.9rem; }
     }
 
     /* tabs for sections */
@@ -584,6 +615,27 @@
       font-size: 0.8rem;
       color: #6c7283;
     }
+    .social-links { 
+      display: flex; 
+      justify-content: center; 
+      gap: 1.5rem; 
+      margin-top: 1rem; 
+      flex-wrap: wrap;
+    }
+    .social-links a { 
+      font-size: 1.5rem; 
+      color: #9ca3af; 
+      transition: all 0.3s ease; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center;
+      width: 2.5rem;
+      height: 2.5rem;
+    }
+    .social-links a:hover { 
+      color: #e50914 !important; 
+      transform: scale(1.2); 
+    }
     @media (max-width: 700px) {
       .navbar { flex-direction: column; text-align: center; }
       .movies-grid { padding: 0 1rem; gap: 1rem; }
@@ -599,9 +651,19 @@
     <h2>Nest Films <i class="fas fa-film"></i></h2>
     <span>Stream · Download · Unlimited</span>
   </div>
+  <nav class="nav-menu">
+    <a href="index.html" class="nav-link active">🏠 Home</a>
+    <a href="about.html" class="nav-link">About</a>
+    <a href="contact.html" class="nav-link">Contact</a>
+    <a href="how-it-works.html" class="nav-link">How it Works</a>
+    <a href="privacy.html" class="nav-link">Privacy</a>
+    <a href="terms.html" class="nav-link">Terms</a>
+    <a href="disclaimer.html" class="nav-link">Disclaimer</a>
+  </nav>
   <div id="authWidget" class="auth-buttons">
     <!-- dynamic auth buttons -->
   </div>
+
 </header>
 
 <!-- FEATURED SECTION with slick motion & latest 5 movies -->
@@ -629,9 +691,15 @@
   <!-- movies injected -->
 </div>
 
-<footer>
-  <p>© 2025 Nest Films — Watch & download your favorite movies legally. All content is demo for portfolio.</p>
-</footer>
+  <footer>
+<p>&copy; 2025 Nest Films. Watch & download your favorite movies legally.</p>
+<p>All rights reserved.</p>
+    <div class="social-links">
+      <a href="https://www.instagram.com/nester_officia1/" title="Instagram" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+      <a href="https://www.tiktok.com/@nester_dev" title="TikTok" aria-label="TikTok"><i class="fab fa-tiktok"></i></a>
+      <a href="https://wa.me/250796104069" title="WhatsApp" aria-label="WhatsApp"><i class="fab fa-whatsapp"></i></a>
+    </div>
+  </footer>
 
 <!-- video modal -->
 <div id="videoModal" class="modal">
