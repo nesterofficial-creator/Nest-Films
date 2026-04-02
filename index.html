@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>Nest Films - Stream & Download Movies</title>
+  <!-- Google Fonts & Font Awesome -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,600;14..32,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <!-- Firebase SDKs -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyD7CMmMpkmggqrM9KvmMEzDbagpeG2n7F0",
+      authDomain: "nest-films-94b21.firebaseapp.com",
+      projectId: "nest-films-94b21",
+      storageBucket: "nest-films-94b21.firebasestorage.app",
+      messagingSenderId: "539461276019",
+      appId: "1:539461276019:web:25b44229625ae814567506"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    // Make auth and functions globally accessible for UI scripts
+    window.auth = auth;
+    window.signOutUser = signOut;
+    window.signInWithEmail = signInWithEmailAndPassword;
+    window.createUserWithEmail = createUserWithEmailAndPassword;
+  </script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #0a0c10;
+      color: #f1f5f9;
+      line-height: 1.5;
+    }
+
+    /* scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #1e1f25;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #e50914;
+      border-radius: 10px;
+    }
+
+    /* header & nav */
+    .navbar {
+      background: #0f1117e6;
+      backdrop-filter: blur(12px);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+      border-bottom: 1px solid #2a2d36;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .logo h2 {
+      font-size: 1.7rem;
+      background: linear-gradient(135deg, #e50914, #ff4d4d);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      letter-spacing: -0.5px;
+    }
+    .logo span {
+      font-size: 0.8rem;
+      color: #9ca3af;
+      display: block;
+    }
+
+    .auth-buttons {
+      display: flex;
+      gap: 1rem;
+    }
+    .btn-outline, .btn-primary, .btn-logout {
+      padding: 0.5rem 1.2rem;
+      border-radius: 40px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: none;
+      font-size: 0.9rem;
+    }
+    .btn-outline {
+      background: transparent;
+      border: 1px solid #e50914;
+      color: #e50914;
+    }
+    .btn-outline:hover {
+      background: #e50914;
+      color: white;
+    }
+    .btn-primary {
+      background: #e50914;
+      color: white;
+    }
+    .btn-primary:hover {
+      background: #b00710;
+      transform: scale(0.98);
+    }
+    .btn-logout {
+      background: #2c2f36;
+      color: #f1f5f9;
+    }
+    .btn-logout:hover {
+      background: #3e424c;
+    }
+    .user-greeting {
+      font-size: 0.85rem;
+      background: #1e1f2a;
+      padding: 0.4rem 1rem;
+      border-radius: 40px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* tabs for sections */
+    .section-tabs {
+      display: flex;
+      justify-content: center;
+      gap: 2rem;
+      margin: 2rem 1rem 1rem;
+      border-bottom: 1px solid #272a33;
+      padding-bottom: 0.5rem;
+    }
+    .tab-btn {
+      background: none;
+      border: none;
+      font-size: 1.3rem;
+      font-weight: 700;
+      padding: 0.5rem 1.5rem;
+      cursor: pointer;
+      color: #9ca3af;
+      transition: 0.2s;
+      border-radius: 30px;
+    }
+    .tab-btn.active {
+      color: #e50914;
+      background: #1e1f2a;
+      box-shadow: 0 2px 8px rgba(229,9,20,0.2);
+    }
+    .tab-btn:hover {
+      color: white;
+    }
+
+    /* categories row */
+    .categories-filter {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.7rem;
+      margin: 1rem 1rem 2rem;
+    }
+    .cat-chip {
+      background: #1e1f2a;
+      padding: 0.4rem 1.2rem;
+      border-radius: 40px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: 1px solid transparent;
+    }
+    .cat-chip.active-cat {
+      background: #e50914;
+      color: white;
+      border-color: #ff5a5a;
+    }
+    .cat-chip:hover {
+      background: #e50914cc;
+      color: white;
+    }
+
+    /* movies grid */
+    .movies-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 1.8rem;
+      padding: 0 2rem 3rem;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    .movie-card {
+      background: #14161f;
+      border-radius: 18px;
+      overflow: hidden;
+      transition: transform 0.25s, box-shadow 0.2s;
+      box-shadow: 0 10px 20px -5px rgba(0,0,0,0.5);
+    }
+    .movie-card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 20px 25px -12px rgba(229,9,20,0.3);
+    }
+    .movie-poster {
+      background: #1f212b;
+      height: 280px;
+      border-radius: 18px 18px 0 0;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3.5rem;
+      color: #e50914;
+    }
+    .movie-info {
+      padding: 1rem;
+    }
+    .movie-title {
+      font-weight: 700;
+      font-size: 1.1rem;
+      margin-bottom: 0.4rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .movie-cat {
+      font-size: 0.7rem;
+      color: #9ca3af;
+      text-transform: uppercase;
+      margin-bottom: 0.6rem;
+    }
+    .action-buttons {
+      display: flex;
+      gap: 0.6rem;
+      margin-top: 0.7rem;
+    }
+    .watch-btn, .download-btn {
+      flex: 1;
+      text-align: center;
+      padding: 0.4rem 0;
+      border-radius: 40px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+    }
+    .watch-btn {
+      background: #e50914;
+      color: white;
+      border: none;
+    }
+    .download-btn {
+      background: #2a2d38;
+      color: #ddd;
+      border: none;
+    }
+    .watch-btn:hover {
+      background: #ff1a2c;
+    }
+    .download-btn:hover {
+      background: #3f4453;
+    }
+
+    /* Featured Section (Slick Motion) */
+    .featured-section {
+      margin: 2rem 2rem 1rem;
+      background: linear-gradient(145deg, #0f1119, #0a0c10);
+      border-radius: 32px;
+      padding: 1.5rem 1rem;
+      border: 1px solid #2a2d36;
+      overflow: hidden;
+    }
+    .featured-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding: 0 1rem 1rem;
+      flex-wrap: wrap;
+    }
+    .featured-header h2 {
+      font-size: 1.7rem;
+      background: linear-gradient(135deg, #ffb347, #ff6b6b);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .featured-header h2 i {
+      color: #ffb347;
+      background: none;
+      -webkit-background-clip: unset;
+    }
+    .featured-slider {
+      display: flex;
+      gap: 1.5rem;
+      overflow-x: auto;
+      scroll-behavior: smooth;
+      padding: 0.5rem 0.5rem 1.5rem;
+      scrollbar-width: thin;
+      cursor: grab;
+    }
+    .featured-slider:active {
+      cursor: grabbing;
+    }
+    .featured-slider::-webkit-scrollbar {
+      height: 6px;
+    }
+    .featured-card {
+      flex: 0 0 260px;
+      background: #14161f;
+      border-radius: 24px;
+      transition: all 0.4s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+      transform: scale(0.98);
+      opacity: 0.9;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+    }
+    .featured-card:hover {
+      transform: scale(1.02) translateY(-6px);
+      opacity: 1;
+      box-shadow: 0 20px 30px -8px rgba(229,9,20,0.4);
+    }
+    .featured-poster {
+      background: #1f212b;
+      height: 210px;
+      border-radius: 24px 24px 0 0;
+      overflow: hidden;
+      position: relative;
+    }
+    .featured-poster img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .featured-info {
+      padding: 1rem;
+    }
+    .featured-title {
+      font-weight: 800;
+      font-size: 1rem;
+      margin-bottom: 0.3rem;
+    }
+    .featured-badge {
+      font-size: 0.7rem;
+      color: #e50914;
+    }
+    .slider-controls {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.8rem;
+      padding: 0 1rem;
+    }
+    .slider-btn {
+      background: #2c2f36;
+      border: none;
+      color: white;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    .slider-btn:hover {
+      background: #e50914;
+    }
+
+    /* modal for video player / download */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.9);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-content {
+      background: #0f0f14;
+      width: 90%;
+      max-width: 900px;
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: 0 25px 40px rgba(0,0,0,0.6);
+    }
+    .modal-header {
+      padding: 1rem;
+      display: flex;
+      justify-content: space-between;
+      background: #1e1f2a;
+    }
+    .close-modal {
+      background: none;
+      border: none;
+      font-size: 1.8rem;
+      cursor: pointer;
+      color: white;
+    }
+    video {
+      width: 100%;
+      outline: none;
+      background: black;
+    }
+    .modal-download-link {
+      display: block;
+      background: #e50914;
+      margin: 0.8rem;
+      text-align: center;
+      padding: 0.6rem;
+      border-radius: 40px;
+      color: white;
+      text-decoration: none;
+      font-weight: bold;
+    }
+    /* auth modal */
+    .auth-modal {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.85);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1100;
+    }
+    .auth-card {
+      background: #12131c;
+      padding: 2rem;
+      border-radius: 32px;
+      width: 90%;
+      max-width: 400px;
+      text-align: center;
+    }
+    .auth-card input {
+      width: 100%;
+      padding: 0.8rem;
+      margin: 0.6rem 0;
+      background: #1e1f2a;
+      border: 1px solid #333842;
+      border-radius: 40px;
+      color: white;
+    }
+    .auth-toggle {
+      margin-top: 1rem;
+      color: #e50914;
+      cursor: pointer;
+    }
+    .hide {
+      display: none !important;
+    }
+    
+    /* admin panel styles */
+    .admin-modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.9);
+      z-index: 1200;
+      align-items: center;
+      justify-content: center;
+    }
+    .admin-content {
+      background: #0f0f14;
+      width: 90%;
+      max-width: 800px;
+      max-height: 90vh;
+      border-radius: 24px;
+      overflow-y: auto;
+      box-shadow: 0 25px 40px rgba(0,0,0,0.6);
+    }
+    .admin-header {
+      padding: 1.5rem;
+      background: linear-gradient(135deg, #1a1f2e, #16213e);
+      border-bottom: 1px solid #2a2d36;
+    }
+    .admin-tabs {
+      display: flex;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+    .admin-tab-btn {
+      flex: 1;
+      padding: 0.8rem;
+      background: #2c2f36;
+      border: none;
+      color: #f1f5f9;
+      cursor: pointer;
+      border-radius: 12px;
+      font-weight: 600;
+      transition: 0.2s;
+    }
+    .admin-tab-btn.active {
+      background: #e50914;
+      box-shadow: 0 4px 12px rgba(229,9,20,0.3);
+    }
+    .admin-form-group {
+      padding: 1.5rem;
+    }
+    .admin-form-group input, .admin-form-group select, .admin-form-group textarea {
+      width: 100%;
+      padding: 0.8rem;
+      margin: 0.5rem 0;
+      background: #1e1f2a;
+      border: 1px solid #333842;
+      border-radius: 12px;
+      color: white;
+      font-family: inherit;
+    }
+    .admin-form-group textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+    .admin-movies-list {
+      padding: 1.5rem;
+      max-height: 60vh;
+      overflow-y: auto;
+    }
+    .admin-movie-item {
+      background: #1e1f2a;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      border-radius: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+    }
+    .admin-movie-info h4 {
+      margin-bottom: 0.3rem;
+    }
+    .admin-movie-actions button {
+      padding: 0.4rem 0.8rem;
+      margin-left: 0.5rem;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.8rem;
+    }
+    .btn-admin-edit { background: #4f46e5; color: white; }
+    .btn-admin-delete { background: #dc2626; color: white; }
+    .btn-admin-add { background: #10b981; color: white; width: 100%; padding: 1rem; font-size: 1.1rem; }
+    
+    /* admin badge clickable */
+    .admin-badge {
+      background: linear-gradient(135deg, #ffd700, #ffed4a);
+      color: #b8860b;
+      font-size: 0.7rem;
+      font-weight: 800;
+      padding: 0.3rem 0.8rem;
+      border-radius: 20px;
+      margin-left: 0.5rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      box-shadow: 0 2px 8px rgba(255, 215, 0, 0.3);
+      animation: pulse-admin 2s infinite;
+      cursor: pointer;
+      transition: transform 0.1s;
+    }
+    .admin-badge:active { transform: scale(0.97); }
+    .admin-badge i {
+      margin-right: 0.2rem;
+    }
+    @keyframes pulse-admin {
+      0%, 100% { box-shadow: 0 2px 8px rgba(255, 215, 0, 0.3); }
+      50% { box-shadow: 0 2px 12px rgba(255, 215, 0, 0.5); }
+    }
+    footer {
+      text-align: center;
+      padding: 2rem;
+      border-top: 1px solid #1f212b;
+      margin-top: 1rem;
+      font-size: 0.8rem;
+      color: #6c7283;
+    }
+    @media (max-width: 700px) {
+      .navbar { flex-direction: column; text-align: center; }
+      .movies-grid { padding: 0 1rem; gap: 1rem; }
+      .featured-section { margin: 1rem; }
+      .featured-card { flex: 0 0 200px; }
+    }
+  </style>
+</head>
+<body>
+
+<header class="navbar">
+  <div class="logo">
+    <h2>Nest Films <i class="fas fa-film"></i></h2>
+    <span>Stream · Download · Unlimited</span>
+  </div>
+  <div id="authWidget" class="auth-buttons">
+    <!-- dynamic auth buttons -->
+  </div>
+</header>
+
+<!-- FEATURED SECTION with slick motion & latest 5 movies -->
+<div class="featured-section" id="featuredSection">
+  <div class="featured-header">
+    <h2><i class="fas fa-star-of-life"></i> Latest Additions · Fresh & Hot</h2>
+    <div class="slider-controls">
+      <button class="slider-btn" id="slideLeft"><i class="fas fa-chevron-left"></i></button>
+      <button class="slider-btn" id="slideRight"><i class="fas fa-chevron-right"></i></button>
+    </div>
+  </div>
+  <div class="featured-slider" id="featuredSlider">
+    <!-- dynamic 5 latest movies will be injected here -->
+  </div>
+</div>
+
+<div class="section-tabs">
+  <button class="tab-btn active" data-tab="agasobanuye">🎬 Agasobanuye Films</button>
+  <button class="tab-btn" data-tab="subtitled">🌍 Subtitled Films (EN & Other)</button>
+</div>
+
+<div class="categories-filter" id="categoriesContainer"></div>
+
+<div id="moviesGridContainer" class="movies-grid">
+  <!-- movies injected -->
+</div>
+
+<footer>
+  <p>© 2025 Nest Films — Watch & download your favorite movies legally. All content is demo for portfolio.</p>
+</footer>
+
+<!-- video modal -->
+<div id="videoModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <span id="modalMovieTitle">Movie</span>
+      <button class="close-modal" id="closeModalBtn">&times;</button>
+    </div>
+    <video id="videoPlayer" controls controlsList="nodownload"></video>
+    <a id="downloadVideoLink" class="modal-download-link" download><i class="fas fa-download"></i> Download Movie</a>
+  </div>
+</div>
+
+<!-- admin panel modal -->
+<div id="adminModal" class="admin-modal">
+  <div class="admin-content">
+    <div class="admin-header">
+      <h2><i class="fas fa-crown"></i> Admin Panel - Nest Films</h2>
+      <p>Manage movies (Add, Edit, Delete)</p>
+    </div>
+    <div class="admin-tabs">
+      <button class="admin-tab-btn active" data-tab="add" onclick="switchAdminTab('add')">➕ Add New Film</button>
+      <button class="admin-tab-btn" data-tab="manage" onclick="switchAdminTab('manage')">📋 Manage Films</button>
+    </div>
+    <div id="adminTabContent">
+      <div id="addTab" class="admin-form-group">
+        <h3>Add New Film</h3>
+        <input type="text" id="adminTitle" placeholder="Film Title">
+        <input type="text" id="adminPosterIcon" placeholder="Poster Icon (emoji e.g. 🎭)">
+        <select id="adminCategory">
+          <option value="">Select Category</option>
+          <option value="Drama">Drama</option>
+          <option value="Action">Action</option>
+          <option value="Thriller">Thriller</option>
+          <option value="Comedy">Comedy</option>
+          <option value="Horror">Horror</option>
+          <option value="Documentary">Documentary</option>
+          <option value="Western">Western</option>
+        </select>
+        <select id="adminLangType">
+          <option value="agasobanuye">Agasobanuye (Kinyarwanda)</option>
+          <option value="subtitled">Subtitled (EN & Other)</option>
+        </select>
+        <input type="url" id="adminVideoUrl" placeholder="Video URL">
+        <input type="url" id="adminDownloadUrl" placeholder="Download URL">
+        <textarea id="adminDescription" placeholder="Description (optional)"></textarea>
+        <button id="adminSubmitBtn" class="btn-admin-add" onclick="saveFilm()">➕ Add Film</button>
+        <button onclick="closeAdminModal()" class="btn-outline" style="width:100%; margin-top:0.5rem;">Cancel</button>
+      </div>
+      
+      <div id="manageTab" class="admin-form-group hide">
+        <h3>Manage Films <span id="moviesCount">(0)</span></h3>
+        <div id="adminMoviesList" class="admin-movies-list"></div>
+      </div>
+    </div>
+    <button onclick="closeAdminModal()" class="close-modal" style="position: absolute; top: 1rem; right: 1.5rem; font-size: 2rem;">&times;</button>
+  </div>
+</div>
+
+<script type="module">
+import { onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+  
+  // auth already global from head
+  const authWidget = document.getElementById('authWidget');
+  
+  window.nestAdmins = [];
+  fetch('./nest.json')
+    .then(res => res.json())
+    .then(data => {
+      window.nestAdmins = data.admins || [];
+      if (window.auth?.currentUser) updateAuthUI(window.auth.currentUser);
+    })
+    .catch(err => console.error('Failed to load nest.json:', err));
+  
+  function updateAuthUI(user) {
+    if (user) {
+      const isAdmin = window.nestAdmins.some(admin => admin.email === user.email);
+      window.currentUserIsAdmin = isAdmin;
+      const adminBadge = isAdmin ? `<span class="admin-badge" onclick="openAdminPanel(event)" title="Admin Panel"><i class="fas fa-crown"></i>ADMIN</span>` : '';
+      authWidget.innerHTML = `
+        <div class="user-greeting" style="display: flex; gap: 8px;">
+          <i class="fas fa-user-circle"></i> ${user.email.split('@')[0]}${adminBadge}
+        </div>
+        <button id="logoutBtn" class="btn-logout"><i class="fas fa-sign-out-alt"></i> Logout</button>
+      `;
+      document.getElementById('logoutBtn')?.addEventListener('click', async () => await signOut(auth));
+    } else {
+      authWidget.innerHTML = `<button id="showAuthBtn" class="btn-outline"><i class="fas fa-user-plus"></i> Sign Up / Log In</button>`;
+      document.getElementById('showAuthBtn')?.addEventListener('click', () => showAuthModal());
+    }
+  }
+  
+  function showAuthModal() {
+    const modalDiv = document.createElement('div');
+    modalDiv.className = 'auth-modal';
+    modalDiv.innerHTML = `
+      <div class="auth-card">
+        <h2><i class="fas fa-key"></i> Nest Films Account</h2>
+        <input type="email" id="authEmail" placeholder="Email address" />
+        <input type="password" id="authPassword" placeholder="Password" />
+        <button id="authActionBtn" class="btn-primary" style="width:100%; margin-top:10px;">Sign In</button>
+        <p class="auth-toggle" id="toggleAuthMode">Don't have an account? Sign Up</p>
+        <button id="closeAuthBtn" class="btn-outline" style="margin-top:12px;">Cancel</button>
+      </div>
+    `;
+    document.body.appendChild(modalDiv);
+    let isLogin = true;
+    const authAction = document.getElementById('authActionBtn');
+    const toggleText = document.getElementById('toggleAuthMode');
+    const emailInput = document.getElementById('authEmail');
+    const pwdInput = document.getElementById('authPassword');
+    const updateButton = () => { authAction.textContent = isLogin ? 'Sign In' : 'Create Account'; toggleText.textContent = isLogin ? "Don't have an account? Sign Up" : "Already have an account? Sign In"; };
+    toggleText.addEventListener('click', () => { isLogin = !isLogin; updateButton(); });
+    authAction.addEventListener('click', async () => {
+      const email = emailInput.value, password = pwdInput.value;
+      if(!email || !password) { alert("Enter email & password"); return; }
+      try {
+        if(isLogin) await signInWithEmailAndPassword(auth, email, password);
+        else await createUserWithEmailAndPassword(auth, email, password);
+        modalDiv.remove();
+      } catch(err) { alert("Auth error: " + err.message); }
+    });
+    document.getElementById('closeAuthBtn').addEventListener('click', () => modalDiv.remove());
+  }
+  
+  onAuthStateChanged(auth, (user) => updateAuthUI(user));
+  
+  // ----- MOVIE DATA -----
+  window.moviesData = [];
+  async function loadMovies() {
+    try {
+      const response = await fetch('./nest.json');
+      const nestData = await response.json();
+      let baseMovies = nestData.movies || [];
+      const localMovies = localStorage.getItem('nestMovies');
+      if (localMovies) {
+        const localData = JSON.parse(localMovies);
+        const localMap = new Map(localData.map(m => [m.id, m]));
+        baseMovies = baseMovies.map(movie => localMap.get(movie.id) || movie);
+        localData.forEach(localMovie => { if (!baseMovies.find(m => m.id === localMovie.id)) baseMovies.push(localMovie); });
+      }
+      window.moviesData = baseMovies;
+    } catch(err) { console.error(err); window.moviesData = []; }
+  }
+  function saveMovies() { localStorage.setItem('nestMovies', JSON.stringify(window.moviesData)); }
+  
+  let currentTab = "agasobanuye";
+  let currentCategory = "All";
+  
+  function getUniqueCategories(langType) {
+    const movies = window.moviesData.filter(m => m.langType === langType);
+    return ["All", ...new Set(movies.map(m => m.category))];
+  }
+  function renderCategories() {
+    const categories = getUniqueCategories(currentTab);
+    const container = document.getElementById('categoriesContainer');
+    container.innerHTML = categories.map(cat => `<div class="cat-chip ${currentCategory === cat ? 'active-cat' : ''}" data-category="${cat}">${cat}</div>`).join('');
+    document.querySelectorAll('.cat-chip').forEach(chip => chip.addEventListener('click', () => { currentCategory = chip.getAttribute('data-category'); renderMovies(); renderCategories(); }));
+  }
+  
+  async function renderMovies() {
+    if (window.moviesData.length === 0) await loadMovies();
+    let filtered = window.moviesData.filter(m => m.langType === currentTab);
+    if(currentCategory !== "All") filtered = filtered.filter(m => m.category === currentCategory);
+    const grid = document.getElementById('moviesGridContainer');
+    if(filtered.length === 0) { grid.innerHTML = `<div style="text-align:center; grid-column:1/-1; padding:3rem;">🎬 No movies in this category yet.</div>`; return; }
+    grid.innerHTML = filtered.map(movie => `
+      <div class="movie-card" data-id="${movie.id}">
+<div class="movie-poster">
+  ${movie.posterIcon && movie.posterIcon.startsWith('http') 
+    ? `<img src="${movie.posterIcon}" alt="${movie.title}" style="width:100%; height:100%; object-fit:cover; border-radius:18px 18px 0 0;">` 
+    : (movie.posterIcon || '<i class="fas fa-play-circle"></i>')}
+</div>
+        <div class="movie-info">
+          <div class="movie-title">${movie.title}</div>
+          <div class="movie-cat">${movie.category}</div>
+          <div class="action-buttons">
+            <button class="watch-btn" data-id="${movie.id}" data-url="${movie.videoUrl}" data-title="${movie.title}" data-download="${movie.downloadUrl}"><i class="fas fa-eye"></i> Watch</button>
+            <button class="download-btn" data-url="${movie.downloadUrl}" data-title="${movie.title}"><i class="fas fa-download"></i> Download</button>
+          </div>
+        </div>
+      </div>
+    `).join('');
+document.querySelectorAll('.watch-btn').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); window.open(btn.getAttribute('data-url'), '_blank'); }));
+    document.querySelectorAll('.download-btn').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); triggerDownload(btn.getAttribute('data-url'), btn.getAttribute('data-title')); }));
+  }
+  
+  // FEATURED: latest 5 movies (by id desc order) with smooth slider
+  function renderFeaturedSlider() {
+    const sorted = [...window.moviesData].sort((a,b) => b.id - a.id);
+    const latest = sorted.slice(0,5);
+    const slider = document.getElementById('featuredSlider');
+    if(latest.length === 0) { slider.innerHTML = '<div style="padding:2rem; text-align:center;">✨ Add movies to see latest here ✨</div>'; return; }
+    slider.innerHTML = latest.map(m => {
+      const posterContent = m.posterIcon && m.posterIcon.startsWith('http') 
+        ? `<img src="${m.posterIcon}" alt="${m.title} Poster" loading="lazy" onerror="this.style.display=\'none\'; this.nextElementSibling.style.display=\'flex\';"/>`
+        : `<i class="fas fa-film fa-5x" style="color: #e50914; display: flex; align-items: center; justify-content: center;"></i>`;
+      return `
+        <div class="featured-card">
+          <div class="featured-poster" style="display: flex; align-items: center; justify-content: center;">
+            ${posterContent}
+          </div>
+          <div class="featured-info">
+            <div class="featured-title">${m.title}</div>
+            <div class="featured-badge">⭐ NEW · ${m.category}</div>
+            <div class="action-buttons" style="margin-top: 8px;">
+              <button class="watch-btn" data-url="${m.videoUrl}" data-title="${m.title}" data-download="${m.downloadUrl}" style="font-size:0.7rem;">Watch</button>
+              <button class="download-btn" data-url="${m.downloadUrl}" data-title="${m.title}" style="font-size:0.7rem;">DL</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+document.querySelectorAll('#featuredSlider .watch-btn').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); window.open(btn.getAttribute('data-url'), '_blank'); }));
+    document.querySelectorAll('#featuredSlider .download-btn').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); triggerDownload(btn.getAttribute('data-url'), btn.getAttribute('data-title')); }));
+  }
+  
+  // Slider scroll with motion
+  function initSliderControls() {
+    const slider = document.getElementById('featuredSlider');
+    document.getElementById('slideLeft')?.addEventListener('click', () => { slider.scrollBy({ left: -280, behavior: 'smooth' }); });
+    document.getElementById('slideRight')?.addEventListener('click', () => { slider.scrollBy({ left: 280, behavior: 'smooth' }); });
+  }
+  
+    // videoModal removed; direct watch now
+function openVideoDirect(url) {
+    if(!window.auth.currentUser) { alert("Please sign up / login to watch movies."); showAuthModal(); return; }
+    window.open(url, '_blank');
+  }
+  function triggerDownload(url, title) { if(!auth.currentUser) { alert("Please login to download movies."); showAuthModal(); return; } const a = document.createElement('a'); a.href = url; a.download = `${title}.mp4`; document.body.appendChild(a); a.click(); document.body.removeChild(a); }
+// modal handlers removed
+  window.addEventListener('click', (e) => { if(e.target === videoModal) { videoModal.style.display = 'none'; videoPlayer.pause(); } if(e.target === document.getElementById('adminModal')) closeAdminModal(); });
+  
+  const tabBtns = document.querySelectorAll('.tab-btn');
+  tabBtns.forEach(btn => btn.addEventListener('click', () => { currentTab = btn.getAttribute('data-tab'); currentCategory = "All"; tabBtns.forEach(b => b.classList.remove('active')); btn.classList.add('active'); renderCategories(); renderMovies(); }));
+  
+  await loadMovies();
+  renderCategories(); renderMovies(); renderFeaturedSlider(); initSliderControls();
+  
+  // Admin functions (global exposure)
+  let currentAdminTab = 'add', editingMovieId = null;
+  window.openAdminPanel = function(event) { if(event) event.stopPropagation(); if (!window.currentUserIsAdmin) { alert('Admin access required'); return; } document.getElementById('adminModal').style.display = 'flex'; renderAdminTabs(); if (currentAdminTab === 'manage') renderAdminMoviesList(); };
+  window.closeAdminModal = function() { document.getElementById('adminModal').style.display = 'none'; resetAdminForm(); };
+  window.switchAdminTab = function(tab) { currentAdminTab = tab; renderAdminTabs(); };
+  function renderAdminTabs() { document.querySelectorAll('.admin-tab-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.tab === currentAdminTab)); document.getElementById('addTab').classList.toggle('hide', currentAdminTab !== 'add'); document.getElementById('manageTab').classList.toggle('hide', currentAdminTab !== 'manage'); if (currentAdminTab === 'manage') renderAdminMoviesList(); }
+  window.saveFilm = function() { if(editingMovieId === null) addFilm(); else updateFilm(); };
+  function addFilm() {
+    const title = document.getElementById('adminTitle').value.trim(), posterIcon = document.getElementById('adminPosterIcon').value.trim() || '🎬', category = document.getElementById('adminCategory').value, langType = document.getElementById('adminLangType').value, videoUrl = document.getElementById('adminVideoUrl').value.trim(), downloadUrl = document.getElementById('adminDownloadUrl').value.trim(), description = document.getElementById('adminDescription').value.trim();
+    if (!title || !category || !langType || !videoUrl || !downloadUrl) { alert('Please fill all required fields'); return; }
+    const newId = Math.max(...window.moviesData.map(m => m.id), 0) + 1;
+    window.moviesData.push({ id: newId, title, posterIcon, category, langType, videoUrl, downloadUrl, description });
+    saveMovies(); renderMovies(); renderFeaturedSlider(); if (currentAdminTab === 'manage') renderAdminMoviesList(); resetAdminForm(); alert('Film added!');
+  }
+  window.editFilm = function(id) { editingMovieId = id; const movie = window.moviesData.find(m => m.id === id); if(movie) { document.getElementById('adminTitle').value = movie.title; document.getElementById('adminPosterIcon').value = movie.posterIcon || ''; document.getElementById('adminCategory').value = movie.category; document.getElementById('adminLangType').value = movie.langType; document.getElementById('adminVideoUrl').value = movie.videoUrl; document.getElementById('adminDownloadUrl').value = movie.downloadUrl; document.getElementById('adminDescription').value = movie.description || ''; document.getElementById('adminSubmitBtn').textContent = '💾 Update Film'; currentAdminTab = 'add'; renderAdminTabs(); } };
+  function updateFilm() {
+    const idx = window.moviesData.findIndex(m => m.id === editingMovieId);
+    if(idx === -1) return;
+    window.moviesData[idx] = { ...window.moviesData[idx], title: document.getElementById('adminTitle').value.trim(), posterIcon: document.getElementById('adminPosterIcon').value.trim() || '🎬', category: document.getElementById('adminCategory').value, langType: document.getElementById('adminLangType').value, videoUrl: document.getElementById('adminVideoUrl').value.trim(), downloadUrl: document.getElementById('adminDownloadUrl').value.trim(), description: document.getElementById('adminDescription').value.trim() };
+    saveMovies(); renderMovies(); renderFeaturedSlider(); if (currentAdminTab === 'manage') renderAdminMoviesList(); resetAdminForm(); alert('Film updated!');
+  }
+  window.deleteFilm = function(id) { if(!confirm('Delete permanently?')) return; window.moviesData = window.moviesData.filter(m => m.id !== id); saveMovies(); renderMovies(); renderFeaturedSlider(); renderAdminMoviesList(); alert('Deleted'); };
+  function resetAdminForm() { editingMovieId = null; document.getElementById('adminTitle').value = ''; document.getElementById('adminPosterIcon').value = ''; document.getElementById('adminCategory').value = ''; document.getElementById('adminLangType').value = 'agasobanuye'; document.getElementById('adminVideoUrl').value = ''; document.getElementById('adminDownloadUrl').value = ''; document.getElementById('adminDescription').value = ''; document.getElementById('adminSubmitBtn').textContent = '➕ Add Film'; }
+  function renderAdminMoviesList() { const list = document.getElementById('adminMoviesList'); const count = document.getElementById('moviesCount'); if (window.moviesData.length === 0) { list.innerHTML = '<p>No movies yet.</p>'; count.textContent = '(0)'; return; } list.innerHTML = window.moviesData.map(movie => `<div class="admin-movie-item"><div class="admin-movie-info"><h4>${movie.posterIcon || '🎬'} ${movie.title}</h4><small>${movie.category} | ${movie.langType}</small></div><div class="admin-movie-actions"><button class="btn-admin-edit" onclick="editFilm(${movie.id})">Edit</button><button class="btn-admin-delete" onclick="deleteFilm(${movie.id})">Delete</button></div></div>`).join(''); count.textContent = `(${window.moviesData.length})`; }
+</script>
+</body>
+</html>
