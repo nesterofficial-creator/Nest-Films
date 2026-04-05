@@ -1084,7 +1084,32 @@ window.addEventListener('click', (e) => {
     }
   };
   function resetAdminForm() { editingMovieId = null; document.getElementById('adminTitle').value = ''; document.getElementById('adminPosterIcon').value = ''; document.getElementById('adminCategory').value = ''; document.getElementById('adminLangType').value = 'agasobanuye'; document.getElementById('adminVideoUrl').value = ''; document.getElementById('adminDownloadUrl').value = ''; document.getElementById('adminDescription').value = ''; document.getElementById('adminSubmitBtn').textContent = '➕ Add Film'; }
-  function renderAdminMoviesList() { const list = document.getElementById('adminMoviesList'); const count = document.getElementById('moviesCount'); if (window.moviesData.length === 0) { list.innerHTML = '<p>No movies yet.</p>'; count.textContent = '(0)'; return; } list.innerHTML = window.moviesData.map(movie => `<div class="admin-movie-item"><div class="admin-movie-info"><h4>${movie.posterIcon || '🎬'} ${movie.title}</h4><small>${movie.category} | ${movie.langType}</small></div><div class="admin-movie-actions"><button class="btn-admin-edit" onclick="editFilm(${movie.id})">Edit</button><button class="btn-admin-delete" onclick="deleteFilm(${movie.id})">Delete</button></div></div>`).join(''); count.textContent = `(${window.moviesData.length})`; }
+  function renderAdminMoviesList() {
+    const list = document.getElementById('adminMoviesList');
+    const count = document.getElementById('moviesCount');
+    if (window.moviesData.length === 0) {
+      list.innerHTML = '<p>No movies yet.</p>';
+      count.textContent = '(0)';
+      return;
+    }
+    list.innerHTML = window.moviesData.map(movie =>
+      `<div class="admin-movie-item">
+        <div class="admin-movie-info"><h4>${movie.posterIcon || '🎬'} ${movie.title}</h4><small>${movie.category} | ${movie.langType}</small></div>
+        <div class="admin-movie-actions">
+          <button class="btn-admin-edit" data-id="${movie.id}">Edit</button>
+          <button class="btn-admin-delete" data-id="${movie.id}">Delete</button>
+        </div>
+      </div>`
+    ).join('');
+    count.textContent = `(${window.moviesData.length})`;
+    // Attach event handlers after rendering
+    list.querySelectorAll('.btn-admin-edit').forEach(btn => {
+      btn.onclick = () => window.editFilm(btn.getAttribute('data-id'));
+    });
+    list.querySelectorAll('.btn-admin-delete').forEach(btn => {
+      btn.onclick = () => window.deleteFilm(btn.getAttribute('data-id'));
+    });
+  }
 </script>
 </body>
 </html>
