@@ -12,6 +12,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getFirestore } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyD7CMmMpkmggqrM9KvmMEzDbagpeG2n7F0",
@@ -24,9 +25,11 @@
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
+    const db = getFirestore(app);
 
-    // Make auth and functions globally accessible for UI scripts
+    // Make auth, db, and functions globally accessible for UI scripts
     window.auth = auth;
+    window.db = db;
     window.signOutUser = signOut;
     window.signInWithEmail = signInWithEmailAndPassword;
     window.createUserWithEmail = createUserWithEmailAndPassword;
@@ -831,20 +834,17 @@ import { onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWith
   window.moviesData = [];
   async function loadMovies() {
     try {
-      const response = await fetch('./nest.json');
-      const nestData = await response.json();
-      let baseMovies = nestData.movies || [];
-      const localMovies = localStorage.getItem('nestMovies');
-      if (localMovies) {
-        const localData = JSON.parse(localMovies);
-        const localMap = new Map(localData.map(m => [m.id, m]));
-        baseMovies = baseMovies.map(movie => localMap.get(movie.id) || movie);
-        localData.forEach(localMovie => { if (!baseMovies.find(m => m.id === localMovie.id)) baseMovies.push(localMovie); });
-      }
-      window.moviesData = baseMovies;
-    } catch(err) { console.error(err); window.moviesData = []; }
+      const { getDocs, collection } = await import('https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js');
+      const querySnapshot = await getDocs(collection(window.db, "movies"));
+      window.moviesData = [];
+      querySnapshot.forEach((docSnap) => {
+        window.moviesData.push({ id: docSnap.id, ...docSnap.data() });
+      });
+    } catch (err) {
+      console.error("Error loading movies from Firestore:", err);
+      window.moviesData = [];
+    }
   }
-  function saveMovies() { localStorage.setItem('nestMovies', JSON.stringify(window.moviesData)); }
   
   let currentTab = "agasobanuye";
   let currentCategory = "All";
@@ -883,8 +883,56 @@ import { onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWith
         </div>
       </div>
     `).join('');
-document.querySelectorAll('.watch-btn').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); window.open(btn.getAttribute('data-url'), '_blank'); }));
-    document.querySelectorAll('.download-btn').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); triggerDownload(btn.getAttribute('data-url'), btn.getAttribute('data-title')); }));
+// Use modal for watch and download
+const videoModal = document.getElementById('videoModal');
+const videoPlayer = document.getElementById('videoPlayer');
+const downloadVideoLink = document.getElementById('downloadVideoLink');
+const modalMovieTitle = document.getElementById('modalMovieTitle');
+const closeModalBtn = document.getElementById('closeModalBtn');
+
+function openVideoModal({ url, title, downloadUrl }) {
+  if (!window.auth.currentUser) {
+    alert('Please sign up / login to watch movies.');
+    showAuthModal();
+    return;
+  }
+  videoPlayer.src = url;
+  videoPlayer.load();
+  modalMovieTitle.textContent = title;
+  downloadVideoLink.href = downloadUrl;
+  downloadVideoLink.download = `${title}.mp4`;
+  videoModal.style.display = 'flex';
+}
+
+function closeVideoModal() {
+  videoModal.style.display = 'none';
+  videoPlayer.pause();
+  videoPlayer.src = '';
+}
+
+closeModalBtn.addEventListener('click', closeVideoModal);
+window.addEventListener('keydown', (e) => { if (videoModal.style.display === 'flex' && e.key === 'Escape') closeVideoModal(); });
+
+document.querySelectorAll('.watch-btn').forEach(btn => btn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  const url = btn.getAttribute('data-url');
+  if (!window.auth.currentUser) {
+    alert('Please sign up / login to watch movies.');
+    showAuthModal();
+    return;
+  }
+  window.open(url, '_blank');
+}));
+document.querySelectorAll('.download-btn').forEach(btn => btn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  openVideoModal({
+    url: btn.getAttribute('data-url'),
+    title: btn.getAttribute('data-title'),
+    downloadUrl: btn.getAttribute('data-url')
+  });
+  // Focus download link for accessibility
+  setTimeout(() => downloadVideoLink.focus(), 300);
+}));
   }
   
   // FEATURED: latest 5 movies (by id desc order) with smooth slider
@@ -913,8 +961,23 @@ document.querySelectorAll('.watch-btn').forEach(btn => btn.addEventListener('cli
         </div>
       `;
     }).join('');
-document.querySelectorAll('#featuredSlider .watch-btn').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); window.open(btn.getAttribute('data-url'), '_blank'); }));
-    document.querySelectorAll('#featuredSlider .download-btn').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); triggerDownload(btn.getAttribute('data-url'), btn.getAttribute('data-title')); }));
+document.querySelectorAll('#featuredSlider .watch-btn').forEach(btn => btn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  openVideoModal({
+    url: btn.getAttribute('data-url'),
+    title: btn.getAttribute('data-title'),
+    downloadUrl: btn.getAttribute('data-download')
+  });
+}));
+document.querySelectorAll('#featuredSlider .download-btn').forEach(btn => btn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  openVideoModal({
+    url: btn.getAttribute('data-url'),
+    title: btn.getAttribute('data-title'),
+    downloadUrl: btn.getAttribute('data-url')
+  });
+  setTimeout(() => downloadVideoLink.focus(), 300);
+}));
   }
   
   // Slider scroll with motion
@@ -924,14 +987,11 @@ document.querySelectorAll('#featuredSlider .watch-btn').forEach(btn => btn.addEv
     document.getElementById('slideRight')?.addEventListener('click', () => { slider.scrollBy({ left: 280, behavior: 'smooth' }); });
   }
   
-    // videoModal removed; direct watch now
-function openVideoDirect(url) {
-    if(!window.auth.currentUser) { alert("Please sign up / login to watch movies."); showAuthModal(); return; }
-    window.open(url, '_blank');
-  }
-  function triggerDownload(url, title) { if(!auth.currentUser) { alert("Please login to download movies."); showAuthModal(); return; } const a = document.createElement('a'); a.href = url; a.download = `${title}.mp4`; document.body.appendChild(a); a.click(); document.body.removeChild(a); }
-// modal handlers removed
-  window.addEventListener('click', (e) => { if(e.target === videoModal) { videoModal.style.display = 'none'; videoPlayer.pause(); } if(e.target === document.getElementById('adminModal')) closeAdminModal(); });
+// Modal close on background click
+window.addEventListener('click', (e) => {
+  if (e.target === videoModal) closeVideoModal();
+  if (e.target === document.getElementById('adminModal')) closeAdminModal();
+});
   
   const tabBtns = document.querySelectorAll('.tab-btn');
   tabBtns.forEach(btn => btn.addEventListener('click', () => { currentTab = btn.getAttribute('data-tab'); currentCategory = "All"; tabBtns.forEach(b => b.classList.remove('active')); btn.classList.add('active'); renderCategories(); renderMovies(); }));
@@ -946,21 +1006,82 @@ function openVideoDirect(url) {
   window.switchAdminTab = function(tab) { currentAdminTab = tab; renderAdminTabs(); };
   function renderAdminTabs() { document.querySelectorAll('.admin-tab-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.tab === currentAdminTab)); document.getElementById('addTab').classList.toggle('hide', currentAdminTab !== 'add'); document.getElementById('manageTab').classList.toggle('hide', currentAdminTab !== 'manage'); if (currentAdminTab === 'manage') renderAdminMoviesList(); }
   window.saveFilm = function() { if(editingMovieId === null) addFilm(); else updateFilm(); };
-  function addFilm() {
-    const title = document.getElementById('adminTitle').value.trim(), posterIcon = document.getElementById('adminPosterIcon').value.trim() || '🎬', category = document.getElementById('adminCategory').value, langType = document.getElementById('adminLangType').value, videoUrl = document.getElementById('adminVideoUrl').value.trim(), downloadUrl = document.getElementById('adminDownloadUrl').value.trim(), description = document.getElementById('adminDescription').value.trim();
+  async function addFilm() {
+    const title = document.getElementById('adminTitle').value.trim(),
+      posterIcon = document.getElementById('adminPosterIcon').value.trim() || '🎬',
+      category = document.getElementById('adminCategory').value,
+      langType = document.getElementById('adminLangType').value,
+      videoUrl = document.getElementById('adminVideoUrl').value.trim(),
+      downloadUrl = document.getElementById('adminDownloadUrl').value.trim(),
+      description = document.getElementById('adminDescription').value.trim();
     if (!title || !category || !langType || !videoUrl || !downloadUrl) { alert('Please fill all required fields'); return; }
-    const newId = Math.max(...window.moviesData.map(m => m.id), 0) + 1;
-    window.moviesData.push({ id: newId, title, posterIcon, category, langType, videoUrl, downloadUrl, description });
-    saveMovies(); renderMovies(); renderFeaturedSlider(); if (currentAdminTab === 'manage') renderAdminMoviesList(); resetAdminForm(); alert('Film added!');
+    try {
+      const { addDoc, collection } = await import('https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js');
+      await addDoc(collection(window.db, "movies"), { title, posterIcon, category, langType, videoUrl, downloadUrl, description });
+      await loadMovies();
+      renderMovies();
+      renderFeaturedSlider();
+      if (currentAdminTab === 'manage') renderAdminMoviesList();
+      resetAdminForm();
+      alert('Film added!');
+    } catch (err) {
+      alert('Failed to add film: ' + err.message);
+    }
   }
-  window.editFilm = function(id) { editingMovieId = id; const movie = window.moviesData.find(m => m.id === id); if(movie) { document.getElementById('adminTitle').value = movie.title; document.getElementById('adminPosterIcon').value = movie.posterIcon || ''; document.getElementById('adminCategory').value = movie.category; document.getElementById('adminLangType').value = movie.langType; document.getElementById('adminVideoUrl').value = movie.videoUrl; document.getElementById('adminDownloadUrl').value = movie.downloadUrl; document.getElementById('adminDescription').value = movie.description || ''; document.getElementById('adminSubmitBtn').textContent = '💾 Update Film'; currentAdminTab = 'add'; renderAdminTabs(); } };
-  function updateFilm() {
-    const idx = window.moviesData.findIndex(m => m.id === editingMovieId);
-    if(idx === -1) return;
-    window.moviesData[idx] = { ...window.moviesData[idx], title: document.getElementById('adminTitle').value.trim(), posterIcon: document.getElementById('adminPosterIcon').value.trim() || '🎬', category: document.getElementById('adminCategory').value, langType: document.getElementById('adminLangType').value, videoUrl: document.getElementById('adminVideoUrl').value.trim(), downloadUrl: document.getElementById('adminDownloadUrl').value.trim(), description: document.getElementById('adminDescription').value.trim() };
-    saveMovies(); renderMovies(); renderFeaturedSlider(); if (currentAdminTab === 'manage') renderAdminMoviesList(); resetAdminForm(); alert('Film updated!');
+  window.editFilm = function(id) {
+    editingMovieId = id;
+    const movie = window.moviesData.find(m => m.id === id);
+    if (movie) {
+      document.getElementById('adminTitle').value = movie.title;
+      document.getElementById('adminPosterIcon').value = movie.posterIcon || '';
+      document.getElementById('adminCategory').value = movie.category;
+      document.getElementById('adminLangType').value = movie.langType;
+      document.getElementById('adminVideoUrl').value = movie.videoUrl;
+      document.getElementById('adminDownloadUrl').value = movie.downloadUrl;
+      document.getElementById('adminDescription').value = movie.description || '';
+      document.getElementById('adminSubmitBtn').textContent = '💾 Update Film';
+      currentAdminTab = 'add';
+      renderAdminTabs();
+    }
+  };
+  async function updateFilm() {
+    if (!editingMovieId) return;
+    const updated = {
+      title: document.getElementById('adminTitle').value.trim(),
+      posterIcon: document.getElementById('adminPosterIcon').value.trim() || '🎬',
+      category: document.getElementById('adminCategory').value,
+      langType: document.getElementById('adminLangType').value,
+      videoUrl: document.getElementById('adminVideoUrl').value.trim(),
+      downloadUrl: document.getElementById('adminDownloadUrl').value.trim(),
+      description: document.getElementById('adminDescription').value.trim()
+    };
+    try {
+      const { updateDoc, doc } = await import('https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js');
+      await updateDoc(doc(window.db, "movies", editingMovieId), updated);
+      await loadMovies();
+      renderMovies();
+      renderFeaturedSlider();
+      if (currentAdminTab === 'manage') renderAdminMoviesList();
+      resetAdminForm();
+      alert('Film updated!');
+    } catch (err) {
+      alert('Failed to update film: ' + err.message);
+    }
   }
-  window.deleteFilm = function(id) { if(!confirm('Delete permanently?')) return; window.moviesData = window.moviesData.filter(m => m.id !== id); saveMovies(); renderMovies(); renderFeaturedSlider(); renderAdminMoviesList(); alert('Deleted'); };
+  window.deleteFilm = async function(id) {
+    if (!confirm('Delete permanently?')) return;
+    try {
+      const { deleteDoc, doc } = await import('https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js');
+      await deleteDoc(doc(window.db, "movies", id));
+      await loadMovies();
+      renderMovies();
+      renderFeaturedSlider();
+      renderAdminMoviesList();
+      alert('Deleted');
+    } catch (err) {
+      alert('Failed to delete film: ' + err.message);
+    }
+  };
   function resetAdminForm() { editingMovieId = null; document.getElementById('adminTitle').value = ''; document.getElementById('adminPosterIcon').value = ''; document.getElementById('adminCategory').value = ''; document.getElementById('adminLangType').value = 'agasobanuye'; document.getElementById('adminVideoUrl').value = ''; document.getElementById('adminDownloadUrl').value = ''; document.getElementById('adminDescription').value = ''; document.getElementById('adminSubmitBtn').textContent = '➕ Add Film'; }
   function renderAdminMoviesList() { const list = document.getElementById('adminMoviesList'); const count = document.getElementById('moviesCount'); if (window.moviesData.length === 0) { list.innerHTML = '<p>No movies yet.</p>'; count.textContent = '(0)'; return; } list.innerHTML = window.moviesData.map(movie => `<div class="admin-movie-item"><div class="admin-movie-info"><h4>${movie.posterIcon || '🎬'} ${movie.title}</h4><small>${movie.category} | ${movie.langType}</small></div><div class="admin-movie-actions"><button class="btn-admin-edit" onclick="editFilm(${movie.id})">Edit</button><button class="btn-admin-delete" onclick="deleteFilm(${movie.id})">Delete</button></div></div>`).join(''); count.textContent = `(${window.moviesData.length})`; }
 </script>
