@@ -916,21 +916,11 @@ window.addEventListener('keydown', (e) => { if (videoModal.style.display === 'fl
 document.querySelectorAll('.watch-btn').forEach(btn => btn.addEventListener('click', (e) => {
   e.stopPropagation();
   const url = btn.getAttribute('data-url');
-  if (!window.auth.currentUser) {
-    alert('Please sign up / login to watch movies.');
-    showAuthModal();
-    return;
-  }
   window.open(url, '_blank');
 }));
 document.querySelectorAll('.download-btn').forEach(btn => btn.addEventListener('click', (e) => {
   e.stopPropagation();
   const url = btn.getAttribute('data-url');
-  if (!window.auth.currentUser) {
-    alert('Please login to download movies.');
-    showAuthModal();
-    return;
-  }
   window.open(url, '_blank');
 }));
   }
@@ -963,20 +953,12 @@ document.querySelectorAll('.download-btn').forEach(btn => btn.addEventListener('
     }).join('');
 document.querySelectorAll('#featuredSlider .watch-btn').forEach(btn => btn.addEventListener('click', (e) => {
   e.stopPropagation();
-  openVideoModal({
-    url: btn.getAttribute('data-url'),
-    title: btn.getAttribute('data-title'),
-    downloadUrl: btn.getAttribute('data-download')
-  });
+  const url = btn.getAttribute('data-url');
+  window.open(url, '_blank');
 }));
 document.querySelectorAll('#featuredSlider .download-btn').forEach(btn => btn.addEventListener('click', (e) => {
   e.stopPropagation();
   const url = btn.getAttribute('data-url');
-  if (!window.auth.currentUser) {
-    alert('Please login to download movies.');
-    showAuthModal();
-    return;
-  }
   window.open(url, '_blank');
 }));
   }
