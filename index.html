@@ -337,6 +337,7 @@
       color: #ffb347;
       background: none;
       -webkit-background-clip: unset;
+      background-clip: unset;
     }
     .featured-slider {
       display: flex;
@@ -652,18 +653,16 @@
 <body>
 
 <header class="navbar">
+  <div style="flex:1; display:flex; align-items:center; gap:1rem;">
+    <input id="searchInput" type="text" placeholder="Search movies, series..." style="padding:0.5rem 1rem; border-radius:30px; border:1px solid #2a2d36; background:#181a22; color:#fff; min-width:220px; outline:none; font-size:1rem;" />
+    <button id="searchBtn" style="background:#e50914; color:#fff; border:none; border-radius:30px; padding:0.5rem 1.2rem; font-weight:600; cursor:pointer;"><i class="fas fa-search"></i></button>
+  </div>
   <div class="logo">
     <h2>Nest Films <i class="fas fa-film"></i></h2>
     <span>Stream · Download · Unlimited</span>
   </div>
   <nav class="nav-menu">
     <a href="index.html" class="nav-link active">🏠 Home</a>
-    <a href="about.html" class="nav-link">About</a>
-    <a href="contact.html" class="nav-link">Contact</a>
-    <a href="how-it-works.html" class="nav-link">How it Works</a>
-    <a href="privacy.html" class="nav-link">Privacy</a>
-    <a href="terms.html" class="nav-link">Terms</a>
-    <a href="disclaimer.html" class="nav-link">Disclaimer</a>
   </nav>
   <div id="authWidget" class="auth-buttons">
     <!-- dynamic auth buttons -->
@@ -672,7 +671,8 @@
 </header>
 
 <!-- FEATURED SECTION with slick motion & latest 5 movies -->
-<div class="featured-section" id="featuredSection">
+<div class="featured-section" id="featuredSection" style="background: linear-gradient(120deg, #1a1c2b 60%, #e50914 100%); box-shadow: 0 8px 32px 0 rgba(229,9,20,0.15); border-radius: 22px; margin: 2rem 0 2.5rem 0; padding: 2rem 0; position: relative; overflow: hidden;">
+    <div style="position:absolute;top:0;left:0;width:100%;height:100%;z-index:0;background: url('neto.jpg') center center/cover no-repeat;"></div>
   <div class="featured-header">
     <h2><i class="fas fa-star-of-life"></i> Latest Additions · Fresh & Hot</h2>
     <div class="slider-controls">
@@ -688,17 +688,56 @@
 <div class="section-tabs">
   <button class="tab-btn active" data-tab="agasobanuye">🎬 Agasobanuye Films</button>
   <button class="tab-btn" data-tab="subtitled">🌍 Subtitled Films (EN & Other)</button>
+  <button class="tab-btn" data-tab="series">📺 Series Films</button>
 </div>
 
 <div class="categories-filter" id="categoriesContainer"></div>
+<div class="sort-filter-bar" style="display:flex;align-items:center;gap:1.5rem;margin:1.5rem 0 0.5rem 0;">
+  <div id="categoryDropdownContainer"></div>
+  <div>
+    <label for="sortSelect" style="margin-right:0.5rem;">Sort by:</label>
+    <select id="sortSelect" style="padding:0.3rem 0.8rem;border-radius:8px;background:#181a22;color:#fff;border:1px solid #2a2d36;">
+      <option value="date-desc">Newest First</option>
+      <option value="date-asc">Oldest First</option>
+      <option value="title-asc">Title A-Z</option>
+      <option value="title-desc">Title Z-A</option>
+    </select>
+  </div>
+</div>
 
 <div id="moviesGridContainer" class="movies-grid">
   <!-- movies injected -->
 </div>
 
+<!-- SERIES SECTION -->
+<div style="display:none; margin-top:2rem;" id="seriesSectionWrapper">
+  <div class="sort-filter-bar" id="seriesSortBar" style="display:flex;align-items:center;gap:1.5rem;margin-bottom:1.2rem;">
+    <div>
+      <label for="seriesSortSelect" style="margin-right:0.5rem;">Sort series by:</label>
+      <select id="seriesSortSelect" style="padding:0.3rem 0.8rem;border-radius:8px;background:#181a22;color:#fff;border:1px solid #2a2d36;">
+        <option value="date-desc">Newest First</option>
+        <option value="date-asc">Oldest First</option>
+        <option value="title-asc">Title A-Z</option>
+        <option value="title-desc">Title Z-A</option>
+      </select>
+    </div>
+  </div>
+  <div id="seriesSection" class="movies-grid">
+    <!-- series and branches injected here -->
+  </div>
+</div>
+
   <footer>
-<p>&copy; 2025 Nest Films. Watch & download your favorite movies legally.</p>
-<p>All rights reserved.</p>
+    <div class="footer-links" style="margin-bottom:1rem;">
+      <a href="about.html">About</a> |
+      <a href="contact.html">Contact</a> |
+      <a href="how-it-works.html">How it Works</a> |
+      <a href="privacy.html">Privacy</a> |
+      <a href="terms.html">Terms</a> |
+      <a href="disclaimer.html">Disclaimer</a>
+    </div>
+    <p>&copy; 2025 Nest Films. Watch & download your favorite movies legally.</p>
+    <p>All rights reserved.</p>
     <div class="social-links">
       <a href="https://www.instagram.com/nester_officia1/" title="Instagram" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
       <a href="https://www.tiktok.com/@nester_dev" title="TikTok" aria-label="TikTok"><i class="fab fa-tiktok"></i></a>
@@ -734,6 +773,10 @@
         <h3>Add New Film</h3>
         <input type="text" id="adminTitle" placeholder="Film Title">
         <input type="text" id="adminPosterIcon" placeholder="Poster Icon (emoji e.g. 🎭)">
+        <select id="adminType">
+          <option value="movie">Movie</option>
+          <option value="series">Series</option>
+        </select>
         <select id="adminCategory">
           <option value="">Select Category</option>
           <option value="Drama">Drama</option>
@@ -766,179 +809,344 @@
 
 <script type="module">
 import { onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-  
-  // auth already global from head
-  const authWidget = document.getElementById('authWidget');
-  
-  window.nestAdmins = [];
-  fetch('./nest.json')
-    .then(res => res.json())
-    .then(data => {
-      window.nestAdmins = data.admins || [];
-      if (window.auth?.currentUser) updateAuthUI(window.auth.currentUser);
-    })
-    .catch(err => console.error('Failed to load nest.json:', err));
-  
-  function updateAuthUI(user) {
-    if (user) {
-      const isAdmin = window.nestAdmins.some(admin => admin.email === user.email);
-      window.currentUserIsAdmin = isAdmin;
-      const adminBadge = isAdmin ? `<span class="admin-badge" onclick="openAdminPanel(event)" title="Admin Panel"><i class="fas fa-crown"></i>ADMIN</span>` : '';
-      authWidget.innerHTML = `
-        <div class="user-greeting" style="display: flex; gap: 8px;">
-          <i class="fas fa-user-circle"></i> ${user.email.split('@')[0]}${adminBadge}
-        </div>
-        <button id="logoutBtn" class="btn-logout"><i class="fas fa-sign-out-alt"></i> Logout</button>
-      `;
-      document.getElementById('logoutBtn')?.addEventListener('click', async () => await signOut(auth));
-    } else {
-      authWidget.innerHTML = `<button id="showAuthBtn" class="btn-outline"><i class="fas fa-user-plus"></i> Sign Up / Log In</button>`;
-      document.getElementById('showAuthBtn')?.addEventListener('click', () => showAuthModal());
-    }
-  }
-  
-  function showAuthModal() {
-    const modalDiv = document.createElement('div');
-    modalDiv.className = 'auth-modal';
-    modalDiv.innerHTML = `
-      <div class="auth-card">
-        <h2><i class="fas fa-key"></i> Nest Films Account</h2>
-        <input type="email" id="authEmail" placeholder="Email address" />
-        <input type="password" id="authPassword" placeholder="Password" />
-        <button id="authActionBtn" class="btn-primary" style="width:100%; margin-top:10px;">Sign In</button>
-        <p class="auth-toggle" id="toggleAuthMode">Don't have an account? Sign Up</p>
-        <button id="closeAuthBtn" class="btn-outline" style="margin-top:12px;">Cancel</button>
-      </div>
-    `;
-    document.body.appendChild(modalDiv);
-    let isLogin = true;
-    const authAction = document.getElementById('authActionBtn');
-    const toggleText = document.getElementById('toggleAuthMode');
-    const emailInput = document.getElementById('authEmail');
-    const pwdInput = document.getElementById('authPassword');
-    const updateButton = () => { authAction.textContent = isLogin ? 'Sign In' : 'Create Account'; toggleText.textContent = isLogin ? "Don't have an account? Sign Up" : "Already have an account? Sign In"; };
-    toggleText.addEventListener('click', () => { isLogin = !isLogin; updateButton(); });
-    authAction.addEventListener('click', async () => {
-      const email = emailInput.value, password = pwdInput.value;
-      if(!email || !password) { alert("Enter email & password"); return; }
-      try {
-        if(isLogin) await signInWithEmailAndPassword(auth, email, password);
-        else await createUserWithEmailAndPassword(auth, email, password);
-        modalDiv.remove();
-      } catch(err) { alert("Auth error: " + err.message); }
-    });
-    document.getElementById('closeAuthBtn').addEventListener('click', () => modalDiv.remove());
-  }
-  
-  onAuthStateChanged(auth, (user) => updateAuthUI(user));
-  
-  // ----- MOVIE DATA -----
-  window.moviesData = [];
-  async function loadMovies() {
-    try {
-      const { getDocs, collection } = await import('https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js');
-      const querySnapshot = await getDocs(collection(window.db, "movies"));
-      window.moviesData = [];
-      querySnapshot.forEach((docSnap) => {
-        window.moviesData.push({ id: docSnap.id, ...docSnap.data() });
-      });
-    } catch (err) {
-      console.error("Error loading movies from Firestore:", err);
-      window.moviesData = [];
-    }
-  }
-  
-  let currentTab = "agasobanuye";
-  let currentCategory = "All";
-  
-  function getUniqueCategories(langType) {
-    const movies = window.moviesData.filter(m => m.langType === langType);
-    return ["All", ...new Set(movies.map(m => m.category))];
-  }
-  function renderCategories() {
-    const categories = getUniqueCategories(currentTab);
-    const container = document.getElementById('categoriesContainer');
-    container.innerHTML = categories.map(cat => `<div class="cat-chip ${currentCategory === cat ? 'active-cat' : ''}" data-category="${cat}">${cat}</div>`).join('');
-    document.querySelectorAll('.cat-chip').forEach(chip => chip.addEventListener('click', () => { currentCategory = chip.getAttribute('data-category'); renderMovies(); renderCategories(); }));
-  }
-  
-  async function renderMovies() {
-    if (window.moviesData.length === 0) await loadMovies();
-    let filtered = window.moviesData.filter(m => m.langType === currentTab);
-    if(currentCategory !== "All") filtered = filtered.filter(m => m.category === currentCategory);
-    const grid = document.getElementById('moviesGridContainer');
-    if(filtered.length === 0) { grid.innerHTML = `<div style="text-align:center; grid-column:1/-1; padding:3rem;">🎬 No movies in this category yet.</div>`; return; }
-    grid.innerHTML = filtered.map(movie => `
-      <div class="movie-card" data-id="${movie.id}">
-<div class="movie-poster">
-  ${movie.posterIcon && movie.posterIcon.startsWith('http') 
-    ? `<img src="${movie.posterIcon}" alt="${movie.title}" style="width:100%; height:100%; object-fit:cover; border-radius:18px 18px 0 0;">` 
-    : (movie.posterIcon || '<i class="fas fa-play-circle"></i>')}
-</div>
-        <div class="movie-info">
-          <div class="movie-title">${movie.title}</div>
-          <div class="movie-cat">${movie.category}</div>
-          <div class="action-buttons">
-            <button class="watch-btn" data-id="${movie.id}" data-url="${movie.videoUrl}" data-title="${movie.title}" data-download="${movie.downloadUrl}"><i class="fas fa-eye"></i> Watch</button>
-            <button class="download-btn" data-url="${movie.downloadUrl}" data-title="${movie.title}"><i class="fas fa-download"></i> Download</button>
-          </div>
-        </div>
-      </div>
-    `).join('');
-// Use modal for watch and download
-const videoModal = document.getElementById('videoModal');
-const videoPlayer = document.getElementById('videoPlayer');
-const downloadVideoLink = document.getElementById('downloadVideoLink');
-const modalMovieTitle = document.getElementById('modalMovieTitle');
-const closeModalBtn = document.getElementById('closeModalBtn');
 
-function openVideoModal({ url, title, downloadUrl }) {
-  if (!window.auth.currentUser) {
-    alert('Please sign up / login to watch movies.');
-    showAuthModal();
+// auth already global from head
+const authWidget = document.getElementById('authWidget');
+window.nestAdmins = [];
+fetch('./nest.json')
+  .then(res => res.json())
+  .then(data => {
+    window.nestAdmins = data.admins || [];
+    if (window.auth?.currentUser) updateAuthUI(window.auth.currentUser);
+  })
+  .catch(err => console.error('Failed to load nest.json:', err));
+function updateAuthUI(user) {
+  if (user) {
+    const isAdmin = window.nestAdmins.some(admin => admin.email === user.email);
+    window.currentUserIsAdmin = isAdmin;
+    const adminBadge = isAdmin ? `<span class="admin-badge" onclick="openAdminPanel(event)" title="Admin Panel"><i class="fas fa-crown"></i>ADMIN</span>` : '';
+    authWidget.innerHTML = `
+      <div class="user-greeting" style="display: flex; gap: 8px;">
+        <i class="fas fa-user-circle"></i> ${user.email.split('@')[0]}${adminBadge}
+      </div>
+      <button id="logoutBtn" class="btn-logout"><i class="fas fa-sign-out-alt"></i> Logout</button>
+    `;
+    document.getElementById('logoutBtn')?.addEventListener('click', async () => await signOut(auth));
+  } else {
+    authWidget.innerHTML = `<button id="showAuthBtn" class="btn-outline"><i class="fas fa-user-plus"></i> Sign Up / Log In</button>`;
+    document.getElementById('showAuthBtn')?.addEventListener('click', () => showAuthModal());
+  }
+}
+function showAuthModal() {
+  const modalDiv = document.createElement('div');
+  modalDiv.className = 'auth-modal';
+  modalDiv.innerHTML = `
+    <div class="auth-card">
+      <h2><i class="fas fa-key"></i> Nest Films Account</h2>
+      <input type="email" id="authEmail" placeholder="Email address" />
+      <input type="password" id="authPassword" placeholder="Password" />
+      <button id="authActionBtn" class="btn-primary" style="width:100%; margin-top:10px;">Sign In</button>
+      <p class="auth-toggle" id="toggleAuthMode">Don't have an account? Sign Up</p>
+      <button id="closeAuthBtn" class="btn-outline" style="margin-top:12px;">Cancel</button>
+    </div>
+  `;
+  document.body.appendChild(modalDiv);
+  let isLogin = true;
+  const authAction = document.getElementById('authActionBtn');
+  const toggleText = document.getElementById('toggleAuthMode');
+  const emailInput = document.getElementById('authEmail');
+  const pwdInput = document.getElementById('authPassword');
+  const updateButton = () => { authAction.textContent = isLogin ? 'Sign In' : 'Create Account'; toggleText.textContent = isLogin ? "Don't have an account? Sign Up" : "Already have an account? Sign In"; };
+  toggleText.addEventListener('click', () => { isLogin = !isLogin; updateButton(); });
+  authAction.addEventListener('click', async () => {
+    const email = emailInput.value, password = pwdInput.value;
+    if(!email || !password) { alert("Enter email & password"); return; }
+    try {
+      if(isLogin) await signInWithEmailAndPassword(auth, email, password);
+      else await createUserWithEmailAndPassword(auth, email, password);
+      modalDiv.remove();
+    } catch(err) { alert("Auth error: " + err.message); }
+  });
+  document.getElementById('closeAuthBtn').addEventListener('click', () => modalDiv.remove());
+}
+onAuthStateChanged(auth, (user) => updateAuthUI(user));
+
+// ----- MOVIE DATA -----
+window.moviesData = [];
+window.seriesData = [];
+async function loadMovies() {
+  try {
+    const { getDocs, collection } = await import('https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js');
+    const querySnapshot = await getDocs(collection(window.db, "movies"));
+    window.moviesData = [];
+    window.seriesData = [];
+    querySnapshot.forEach((docSnap) => {
+      const data = { id: docSnap.id, ...docSnap.data() };
+      if (data.type === 'series') window.seriesData.push(data);
+      else window.moviesData.push(data);
+    });
+    // If no data from Firestore, fallback to nest.json
+    if (window.moviesData.length === 0 && window.seriesData.length === 0) {
+      await loadMoviesFromJson();
+    }
+  } catch (err) {
+    console.error("Error loading movies from Firestore:", err);
+    await loadMoviesFromJson();
+  }
+}
+
+// Fallback: Load movies and series from nest.json
+async function loadMoviesFromJson() {
+  try {
+    const res = await fetch('./nest.json');
+    const data = await res.json();
+    window.moviesData = [];
+    window.seriesData = [];
+    (data.movies || []).forEach(item => {
+      if (item.type === 'series') window.seriesData.push(item);
+      else window.moviesData.push(item);
+    });
+  } catch (err) {
+    console.error('Failed to load movies from nest.json:', err);
+    window.moviesData = [];
+    window.seriesData = [];
+  }
+}
+let currentTab = "agasobanuye";
+let currentCategory = "All";
+function getUniqueCategories(langType) {
+  const movies = window.moviesData.filter(m => m.langType === langType);
+  return ["All", ...Array.from(new Set(movies.map(m => m.category).filter(Boolean)))];
+}
+function renderCategories() {
+  if(currentTab === 'series') { document.getElementById('categoriesContainer').innerHTML = ''; document.getElementById('categoryDropdownContainer').innerHTML = ''; return; }
+  const categories = getUniqueCategories(currentTab);
+  // Professional dropdown for categories
+  const dropdown = document.createElement('select');
+  dropdown.id = 'categoryDropdown';
+  dropdown.style.padding = '0.3rem 0.8rem';
+  dropdown.style.borderRadius = '8px';
+  dropdown.style.background = '#181a22';
+  dropdown.style.color = '#fff';
+  dropdown.style.border = '1px solid #2a2d36';
+  categories.forEach(cat => {
+    const opt = document.createElement('option');
+    opt.value = cat;
+    opt.textContent = cat;
+    if (cat === currentCategory) opt.selected = true;
+    dropdown.appendChild(opt);
+  });
+  dropdown.addEventListener('change', function() {
+    currentCategory = this.value;
+    renderMovies();
+  });
+  const container = document.getElementById('categoryDropdownContainer');
+  container.innerHTML = '';
+  container.appendChild(dropdown);
+}
+async function renderMovies() {
+  if (window.moviesData.length === 0 && window.seriesData.length === 0) await loadMovies();
+  if(currentTab === 'series') { renderSeries(); document.getElementById('moviesGridContainer').style.display = 'none'; document.getElementById('seriesSection').style.display = 'grid'; return; }
+  document.getElementById('moviesGridContainer').style.display = 'grid'; document.getElementById('seriesSection').style.display = 'none';
+  let filtered = window.moviesData.filter(m => m.langType === currentTab);
+  if(currentCategory !== "All") filtered = filtered.filter(m => m.category === currentCategory);
+  // Sorting
+  const sortValue = document.getElementById('sortSelect')?.value || 'date-desc';
+  filtered = filtered.slice();
+  if (sortValue === 'date-desc') {
+    filtered.sort((a, b) => (b.createdAt || b.id || 0) - (a.createdAt || a.id || 0));
+  } else if (sortValue === 'date-asc') {
+    filtered.sort((a, b) => (a.createdAt || a.id || 0) - (b.createdAt || b.id || 0));
+  } else if (sortValue === 'title-asc') {
+    filtered.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+  } else if (sortValue === 'title-desc') {
+    filtered.sort((a, b) => (b.title || '').localeCompare(a.title || ''));
+  }
+  const grid = document.getElementById('moviesGridContainer');
+  if(filtered.length === 0) { grid.innerHTML = `<div style="text-align:center; grid-column:1/-1; padding:3rem;">🎬 No movies in this category yet.</div>`; return; }
+  grid.innerHTML = filtered.map(movie => `
+    <div class="movie-card" data-id="${movie.id}">
+      <div class="movie-poster">
+        ${movie.posterIcon && movie.posterIcon.startsWith('http') 
+          ? `<img src="${movie.posterIcon}" alt="${movie.title}" style="width:100%; height:100%; object-fit:cover; border-radius:18px 18px 0 0; filter: brightness(1.18) contrast(1.08);">` 
+          : (movie.posterIcon || '<i class="fas fa-play-circle"></i>')}
+      </div>
+      <div class="movie-info">
+        <div class="movie-title">${movie.title}</div>
+        <div class="movie-cat">${movie.category}</div>
+        <div class="movie-description" style="font-size:0.95rem; color:#aaa; margin-bottom:0.5rem;">${movie.description ? movie.description : ''}</div>
+        <div class="action-buttons">
+          <button class="watch-btn" data-id="${movie.id}" data-url="${movie.videoUrl}" data-title="${movie.title}" data-download="${movie.downloadUrl}"><i class="fas fa-eye"></i> Watch</button>
+          <button class="download-btn" data-url="${movie.downloadUrl}" data-title="${movie.title}"><i class="fas fa-download"></i> Download</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+  attachMovieCardEvents();
+  // Attach sort change event
+  const sortSelect = document.getElementById('sortSelect');
+  if (sortSelect && !sortSelect._listenerAdded) {
+    sortSelect.addEventListener('change', renderMovies);
+    sortSelect._listenerAdded = true;
+  }
+}
+function attachMovieCardEvents() {
+  const videoModal = document.getElementById('videoModal');
+  const videoPlayer = document.getElementById('videoPlayer');
+  const downloadVideoLink = document.getElementById('downloadVideoLink');
+  const modalMovieTitle = document.getElementById('modalMovieTitle');
+  const closeModalBtn = document.getElementById('closeModalBtn');
+  function openVideoModal({ url, title, downloadUrl }) {
+    if (!window.auth.currentUser) {
+      alert('Please sign up / login to watch movies.');
+      showAuthModal();
+      return;
+    }
+    videoPlayer.src = url;
+    videoPlayer.load();
+    modalMovieTitle.textContent = title;
+    downloadVideoLink.href = downloadUrl;
+    downloadVideoLink.download = `${title}.mp4`;
+    videoModal.style.display = 'flex';
+  }
+  function closeVideoModal() {
+    videoModal.style.display = 'none';
+    videoPlayer.pause();
+    videoPlayer.src = '';
+  }
+  closeModalBtn.addEventListener('click', closeVideoModal);
+  window.addEventListener('keydown', (e) => { if (videoModal.style.display === 'flex' && e.key === 'Escape') closeVideoModal(); });
+  document.querySelectorAll('.watch-btn').forEach(btn => btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const url = btn.getAttribute('data-url');
+    window.open(url, '_blank');
+  }));
+  document.querySelectorAll('.download-btn').forEach(btn => btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const url = btn.getAttribute('data-url');
+    window.open(url, '_blank');
+  }));
+}
+function renderSeries() {
+  const section = document.getElementById('seriesSection');
+  const sortValue = document.getElementById('seriesSortSelect')?.value || 'date-desc';
+  let sortedSeries = window.seriesData.slice();
+  if (sortValue === 'date-desc') {
+    sortedSeries.sort((a, b) => (b.createdAt || b.id || 0) - (a.createdAt || a.id || 0));
+  } else if (sortValue === 'date-asc') {
+    sortedSeries.sort((a, b) => (a.createdAt || a.id || 0) - (b.createdAt || b.id || 0));
+  } else if (sortValue === 'title-asc') {
+    sortedSeries.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+  } else if (sortValue === 'title-desc') {
+    sortedSeries.sort((a, b) => (b.title || '').localeCompare(a.title || ''));
+  }
+  if(sortedSeries.length === 0) { section.innerHTML = `<div style="text-align:center; grid-column:1/-1; padding:3rem;">📺 No series available yet.</div>`; return; }
+  section.innerHTML = sortedSeries.map(series => `
+    <div class="movie-card" data-id="${series.id}">
+      <div class="movie-poster">
+        ${series.posterIcon && series.posterIcon.startsWith('http') 
+          ? `<img src="${series.posterIcon}" alt="${series.title}" style="width:100%; height:100%; object-fit:cover; border-radius:18px 18px 0 0; filter: brightness(1.18) contrast(1.08);">` 
+          : (series.posterIcon || '<i class="fas fa-film"></i>')}
+      </div>
+      <div class="movie-info">
+        <div class="movie-title">${series.title}</div>
+        <div class="movie-cat">${series.category || 'Series'}</div>
+        <div style="font-size:0.85rem; color:#aaa; margin-bottom:0.5rem;">${series.description || ''}</div>
+        <div class="action-buttons">
+          <button class="watch-btn" data-id="${series.id}" data-url="${series.videoUrl}" data-title="${series.title}" data-download="${series.downloadUrl}"><i class="fas fa-eye"></i> Watch</button>
+          <button class="download-btn" data-url="${series.downloadUrl}" data-title="${series.title}"><i class="fas fa-download"></i> Download</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+  attachMovieCardEvents();
+  // Attach sort change event
+  const sortSelect = document.getElementById('seriesSortSelect');
+  if (sortSelect && !sortSelect._listenerAdded) {
+    sortSelect.addEventListener('change', renderSeries);
+    sortSelect._listenerAdded = true;
+  }
+}
+// Search logic
+function searchMovies(query) {
+  query = query.trim().toLowerCase();
+  const grid = document.getElementById('moviesGridContainer');
+  const section = document.getElementById('seriesSection');
+  if (!query) {
+    // Show normal view
+    renderMovies();
     return;
   }
-  videoPlayer.src = url;
-  videoPlayer.load();
-  modalMovieTitle.textContent = title;
-  downloadVideoLink.href = downloadUrl;
-  downloadVideoLink.download = `${title}.mp4`;
-  videoModal.style.display = 'flex';
-}
-
-function closeVideoModal() {
-  videoModal.style.display = 'none';
-  videoPlayer.pause();
-  videoPlayer.src = '';
-}
-
-closeModalBtn.addEventListener('click', closeVideoModal);
-window.addEventListener('keydown', (e) => { if (videoModal.style.display === 'flex' && e.key === 'Escape') closeVideoModal(); });
-
-document.querySelectorAll('.watch-btn').forEach(btn => btn.addEventListener('click', (e) => {
-  e.stopPropagation();
-  const url = btn.getAttribute('data-url');
-  window.open(url, '_blank');
-}));
-document.querySelectorAll('.download-btn').forEach(btn => btn.addEventListener('click', (e) => {
-  e.stopPropagation();
-  const url = btn.getAttribute('data-url');
-  window.open(url, '_blank');
-}));
+  // Hide tabs and categories for search results
+  document.getElementById('categoriesContainer').style.display = 'none';
+  section.style.display = 'none';
+  grid.style.display = 'grid';
+  // Search all movies and series
+  let movieResults = window.moviesData.filter(m =>
+    (m.title && m.title.toLowerCase().includes(query)) ||
+    (m.category && m.category.toLowerCase().includes(query)) ||
+    (m.description && m.description.toLowerCase().includes(query))
+  );
+  let seriesResults = window.seriesData.filter(m =>
+    (m.title && m.title.toLowerCase().includes(query)) ||
+    (m.category && m.category.toLowerCase().includes(query)) ||
+    (m.description && m.description.toLowerCase().includes(query))
+  );
+  let results = [...movieResults, ...seriesResults];
+  if(results.length === 0) {
+    grid.innerHTML = `<div style="text-align:center; grid-column:1/-1; padding:3rem;">🔍 No movies or series found for "${query}"</div>`;
+    return;
   }
+  grid.innerHTML = results.map(item => `
+    <div class="movie-card" data-id="${item.id}">
+      <div class="movie-poster">
+        ${item.posterIcon && item.posterIcon.startsWith('http') 
+          ? `<img src="${item.posterIcon}" alt="${item.title}" style="width:100%; height:100%; object-fit:cover; border-radius:18px 18px 0 0;">` 
+          : (item.posterIcon || '<i class="fas fa-play-circle"></i>')}
+      </div>
+      <div class="movie-info">
+        <div class="movie-title">${item.title}</div>
+        <div class="movie-cat">${item.category || 'Series'}</div>
+        <div class="action-buttons">
+          <button class="watch-btn" data-id="${item.id}" data-url="${item.videoUrl}" data-title="${item.title}" data-download="${item.downloadUrl}"><i class="fas fa-eye"></i> Watch</button>
+          <button class="download-btn" data-url="${item.downloadUrl}" data-title="${item.title}"><i class="fas fa-download"></i> Download</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+  attachMovieCardEvents();
+}
+// Tab logic
+// Tab logic handled below (single declaration)
+// Search bar events
+const searchInput = document.getElementById('searchInput');
+const searchBtn = document.getElementById('searchBtn');
+searchBtn.addEventListener('click', () => {
+  document.getElementById('categoriesContainer').style.display = '';
+  searchMovies(searchInput.value);
+});
+searchInput.addEventListener('keydown', (e) => {
+  if(e.key === 'Enter') {
+    document.getElementById('categoriesContainer').style.display = '';
+    searchMovies(searchInput.value);
+  }
+});
+// Initial load
+await loadMovies();
+renderCategories(); renderMovies(); renderFeaturedSlider(); initSliderControls();
   
   // FEATURED: latest 5 movies (by id desc order) with smooth slider
   function renderFeaturedSlider() {
-    const sorted = [...window.moviesData].sort((a,b) => b.id - a.id);
+    const sorted = [...window.moviesData].sort((a,b) => (b.createdAt || b.id || 0) - (a.createdAt || a.id || 0));
     const latest = sorted.slice(0,5);
     const slider = document.getElementById('featuredSlider');
     if(latest.length === 0) { slider.innerHTML = '<div style="padding:2rem; text-align:center;">✨ Add movies to see latest here ✨</div>'; return; }
-    slider.innerHTML = latest.map(m => {
+    slider.innerHTML = latest.map((m, i) => {
       const posterContent = m.posterIcon && m.posterIcon.startsWith('http') 
-        ? `<img src="${m.posterIcon}" alt="${m.title} Poster" loading="lazy" onerror="this.style.display=\'none\'; this.nextElementSibling.style.display=\'flex\';"/>`
+        ? `<img src="${m.posterIcon}" alt="${m.title} Poster" loading="lazy" style="filter: brightness(1.18) contrast(1.08);" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"/>`
         : `<i class="fas fa-film fa-5x" style="color: #e50914; display: flex; align-items: center; justify-content: center;"></i>`;
       return `
-        <div class="featured-card">
+        <div class="featured-card" data-index="${i}" style="display:${i===0?'block':'none'};transition:all 0.5s;">
           <div class="featured-poster" style="display: flex; align-items: center; justify-content: center;">
             ${posterContent}
           </div>
@@ -953,16 +1161,28 @@ document.querySelectorAll('.download-btn').forEach(btn => btn.addEventListener('
         </div>
       `;
     }).join('');
-document.querySelectorAll('#featuredSlider .watch-btn').forEach(btn => btn.addEventListener('click', (e) => {
-  e.stopPropagation();
-  const url = btn.getAttribute('data-url');
-  window.open(url, '_blank');
-}));
-document.querySelectorAll('#featuredSlider .download-btn').forEach(btn => btn.addEventListener('click', (e) => {
-  e.stopPropagation();
-  const url = btn.getAttribute('data-url');
-  window.open(url, '_blank');
-}));
+    // Add rotation logic
+    let current = 0;
+    const cards = slider.querySelectorAll('.featured-card');
+    if(cards.length > 1) {
+      if(window.featuredSliderInterval) clearInterval(window.featuredSliderInterval);
+      window.featuredSliderInterval = setInterval(() => {
+        cards[current].style.display = 'none';
+        current = (current + 1) % cards.length;
+        cards[current].style.display = 'block';
+      }, 3500);
+    }
+    // Button events
+    slider.querySelectorAll('.watch-btn').forEach(btn => btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const url = btn.getAttribute('data-url');
+      window.open(url, '_blank');
+    }));
+    slider.querySelectorAll('.download-btn').forEach(btn => btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const url = btn.getAttribute('data-url');
+      window.open(url, '_blank');
+    }));
   }
   
   // Slider scroll with motion
@@ -994,6 +1214,7 @@ window.addEventListener('click', (e) => {
   async function addFilm() {
     const title = document.getElementById('adminTitle').value.trim(),
       posterIcon = document.getElementById('adminPosterIcon').value.trim() || '🎬',
+      type = document.getElementById('adminType').value,
       category = document.getElementById('adminCategory').value,
       langType = document.getElementById('adminLangType').value,
       videoUrl = document.getElementById('adminVideoUrl').value.trim(),
@@ -1002,7 +1223,7 @@ window.addEventListener('click', (e) => {
     if (!title || !category || !langType || !videoUrl || !downloadUrl) { alert('Please fill all required fields'); return; }
     try {
       const { addDoc, collection } = await import('https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js');
-      await addDoc(collection(window.db, "movies"), { title, posterIcon, category, langType, videoUrl, downloadUrl, description });
+      await addDoc(collection(window.db, "movies"), { title, posterIcon, type, category, langType, videoUrl, downloadUrl, description });
       await loadMovies();
       renderMovies();
       renderFeaturedSlider();
@@ -1019,6 +1240,7 @@ window.addEventListener('click', (e) => {
     if (movie) {
       document.getElementById('adminTitle').value = movie.title;
       document.getElementById('adminPosterIcon').value = movie.posterIcon || '';
+      document.getElementById('adminType').value = movie.type || 'movie';
       document.getElementById('adminCategory').value = movie.category;
       document.getElementById('adminLangType').value = movie.langType;
       document.getElementById('adminVideoUrl').value = movie.videoUrl;
@@ -1034,6 +1256,7 @@ window.addEventListener('click', (e) => {
     const updated = {
       title: document.getElementById('adminTitle').value.trim(),
       posterIcon: document.getElementById('adminPosterIcon').value.trim() || '🎬',
+      type: document.getElementById('adminType').value,
       category: document.getElementById('adminCategory').value,
       langType: document.getElementById('adminLangType').value,
       videoUrl: document.getElementById('adminVideoUrl').value.trim(),
@@ -1071,21 +1294,23 @@ window.addEventListener('click', (e) => {
   function renderAdminMoviesList() {
     const list = document.getElementById('adminMoviesList');
     const count = document.getElementById('moviesCount');
-    if (window.moviesData.length === 0) {
-      list.innerHTML = '<p>No movies yet.</p>';
+    // Combine movies and series for admin management
+    const allItems = [...(window.moviesData||[]), ...(window.seriesData||[])];
+    if (allItems.length === 0) {
+      list.innerHTML = '<p>No movies or series yet.</p>';
       count.textContent = '(0)';
       return;
     }
-    list.innerHTML = window.moviesData.map(movie =>
+    list.innerHTML = allItems.map(item =>
       `<div class="admin-movie-item">
-        <div class="admin-movie-info"><h4>${movie.posterIcon || '🎬'} ${movie.title}</h4><small>${movie.category} | ${movie.langType}</small></div>
+        <div class="admin-movie-info"><h4>${item.posterIcon || '🎬'} ${item.title} <span style='font-size:0.8em;color:#e50914;'>[${item.type||'movie'}]</span></h4><small>${item.category} | ${item.langType}</small></div>
         <div class="admin-movie-actions">
-          <button class="btn-admin-edit" data-id="${movie.id}">Edit</button>
-          <button class="btn-admin-delete" data-id="${movie.id}">Delete</button>
+          <button class="btn-admin-edit" data-id="${item.id}">Edit</button>
+          <button class="btn-admin-delete" data-id="${item.id}">Delete</button>
         </div>
       </div>`
     ).join('');
-    count.textContent = `(${window.moviesData.length})`;
+    count.textContent = `(${allItems.length})`;
     // Attach event handlers after rendering
     list.querySelectorAll('.btn-admin-edit').forEach(btn => {
       btn.onclick = () => window.editFilm(btn.getAttribute('data-id'));
