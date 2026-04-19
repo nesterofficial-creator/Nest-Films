@@ -1,6 +1,27 @@
 {
   "movies": [
-   
+    {
+      "id": "series1",
+      "title": "Agasobanuye Series Example",
+      "type": "series",
+      "langType": "agasobanuye",
+      "category": "Drama",
+      "posterIcon": "🎬",
+      "videoUrl": "https://example.com/agasobanuye-series.mp4",
+      "downloadUrl": "https://example.com/agasobanuye-series-download.mp4",
+      "description": "A sample Agasobanuye series for testing."
+    },
+    {
+      "id": "series2",
+      "title": "Subtitled Series Example",
+      "type": "series",
+      "langType": "subtitled",
+      "category": "Action",
+      "posterIcon": "🌍",
+      "videoUrl": "https://example.com/subtitled-series.mp4",
+      "downloadUrl": "https://example.com/subtitled-series-download.mp4",
+      "description": "A sample Subtitled series for testing."
+    }
   ],
   "admins": [
     {
