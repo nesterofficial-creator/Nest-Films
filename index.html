@@ -673,6 +673,7 @@
 <!-- FEATURED SECTION with slick motion & latest 5 movies -->
 <div class="featured-section" id="featuredSection" style="background: linear-gradient(120deg, #1a1c2b 60%, #e50914 100%); box-shadow: 0 8px 32px 0 rgba(229,9,20,0.15); border-radius: 22px; margin: 2rem 0 2.5rem 0; padding: 2rem 0; position: relative; overflow: hidden;">
     <div style="position:absolute;top:0;left:0;width:100%;height:100%;z-index:0;background: url('neto.jpg') center center/cover no-repeat;"></div>
+    <div style="position:absolute;top:0;left:0;width:100%;height:100%;z-index:1;background: linear-gradient(120deg,rgba(26,28,43,0.92) 60%,rgba(229,9,20,0.65) 100%);"></div>
   <div class="featured-header">
     <h2><i class="fas fa-star-of-life"></i> Latest Additions · Fresh & Hot</h2>
     <div class="slider-controls">
@@ -710,21 +711,8 @@
 </div>
 
 <!-- SERIES SECTION -->
-<div style="display:none; margin-top:2rem;" id="seriesSectionWrapper">
-  <div class="sort-filter-bar" id="seriesSortBar" style="display:flex;align-items:center;gap:1.5rem;margin-bottom:1.2rem;">
-    <div>
-      <label for="seriesSortSelect" style="margin-right:0.5rem;">Sort series by:</label>
-      <select id="seriesSortSelect" style="padding:0.3rem 0.8rem;border-radius:8px;background:#181a22;color:#fff;border:1px solid #2a2d36;">
-        <option value="date-desc">Newest First</option>
-        <option value="date-asc">Oldest First</option>
-        <option value="title-asc">Title A-Z</option>
-        <option value="title-desc">Title Z-A</option>
-      </select>
-    </div>
-  </div>
-  <div id="seriesSection" class="movies-grid">
-    <!-- series and branches injected here -->
-  </div>
+<div id="seriesSection" class="movies-grid" style="display:none; margin-top:2rem;">
+  <!-- series and branches injected here -->
 </div>
 
   <footer>
@@ -968,7 +956,7 @@ async function renderMovies() {
     <div class="movie-card" data-id="${movie.id}">
       <div class="movie-poster">
         ${movie.posterIcon && movie.posterIcon.startsWith('http') 
-          ? `<img src="${movie.posterIcon}" alt="${movie.title}" style="width:100%; height:100%; object-fit:cover; border-radius:18px 18px 0 0; filter: brightness(1.18) contrast(1.08);">` 
+          ? `<img src="${movie.posterIcon}" alt="${movie.title}" style="width:100%; height:100%; object-fit:cover; border-radius:18px 18px 0 0;">` 
           : (movie.posterIcon || '<i class="fas fa-play-circle"></i>')}
       </div>
       <div class="movie-info">
@@ -1029,23 +1017,12 @@ function attachMovieCardEvents() {
 }
 function renderSeries() {
   const section = document.getElementById('seriesSection');
-  const sortValue = document.getElementById('seriesSortSelect')?.value || 'date-desc';
-  let sortedSeries = window.seriesData.slice();
-  if (sortValue === 'date-desc') {
-    sortedSeries.sort((a, b) => (b.createdAt || b.id || 0) - (a.createdAt || a.id || 0));
-  } else if (sortValue === 'date-asc') {
-    sortedSeries.sort((a, b) => (a.createdAt || a.id || 0) - (b.createdAt || b.id || 0));
-  } else if (sortValue === 'title-asc') {
-    sortedSeries.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
-  } else if (sortValue === 'title-desc') {
-    sortedSeries.sort((a, b) => (b.title || '').localeCompare(a.title || ''));
-  }
-  if(sortedSeries.length === 0) { section.innerHTML = `<div style="text-align:center; grid-column:1/-1; padding:3rem;">📺 No series available yet.</div>`; return; }
-  section.innerHTML = sortedSeries.map(series => `
+  if(window.seriesData.length === 0) { section.innerHTML = `<div style="text-align:center; grid-column:1/-1; padding:3rem;">📺 No series available yet.</div>`; return; }
+  section.innerHTML = window.seriesData.map(series => `
     <div class="movie-card" data-id="${series.id}">
       <div class="movie-poster">
         ${series.posterIcon && series.posterIcon.startsWith('http') 
-          ? `<img src="${series.posterIcon}" alt="${series.title}" style="width:100%; height:100%; object-fit:cover; border-radius:18px 18px 0 0; filter: brightness(1.18) contrast(1.08);">` 
+          ? `<img src="${series.posterIcon}" alt="${series.title}" style="width:100%; height:100%; object-fit:cover; border-radius:18px 18px 0 0;">` 
           : (series.posterIcon || '<i class="fas fa-film"></i>')}
       </div>
       <div class="movie-info">
@@ -1060,12 +1037,6 @@ function renderSeries() {
     </div>
   `).join('');
   attachMovieCardEvents();
-  // Attach sort change event
-  const sortSelect = document.getElementById('seriesSortSelect');
-  if (sortSelect && !sortSelect._listenerAdded) {
-    sortSelect.addEventListener('change', renderSeries);
-    sortSelect._listenerAdded = true;
-  }
 }
 // Search logic
 function searchMovies(query) {
@@ -1143,7 +1114,7 @@ renderCategories(); renderMovies(); renderFeaturedSlider(); initSliderControls()
     if(latest.length === 0) { slider.innerHTML = '<div style="padding:2rem; text-align:center;">✨ Add movies to see latest here ✨</div>'; return; }
     slider.innerHTML = latest.map((m, i) => {
       const posterContent = m.posterIcon && m.posterIcon.startsWith('http') 
-        ? `<img src="${m.posterIcon}" alt="${m.title} Poster" loading="lazy" style="filter: brightness(1.18) contrast(1.08);" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"/>`
+        ? `<img src="${m.posterIcon}" alt="${m.title} Poster" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"/>`
         : `<i class="fas fa-film fa-5x" style="color: #e50914; display: flex; align-items: center; justify-content: center;"></i>`;
       return `
         <div class="featured-card" data-index="${i}" style="display:${i===0?'block':'none'};transition:all 0.5s;">
@@ -1322,3 +1293,4 @@ window.addEventListener('click', (e) => {
 </script>
 </body>
 </html>
+
